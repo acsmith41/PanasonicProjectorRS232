@@ -1,0 +1,567 @@
+-- SonySRG-A40Control
+-- Created By: Alan Smith, Audio Visual Solutions, The University of Alabama
+-- Last Date Updated: 2026-01-20
+-- License: MIT
+-- -------------------------
+
+-- This tool uses RS-232 to send serial commands for a Panasonic Camera
+
+-- -------------------------
+
+-- Latest QSYS Designer tested: 10.1.0
+-- Latest Panasonic firmare tested: 
+
+PluginInfo = {
+    Name = "Panasonic Projector",
+    Version = "1.0",
+    Id = "avs_panasonic_projector",
+    Description = "Control a Panasonic Projector via RS-232 serial",
+    ShowDebug = true,
+    BuildVersion = "1"
+};
+
+-- -------------------------
+
+-- *** Reserved Functions ***
+function GetColor(props)
+    return {50,50,50}
+end
+
+function GetPrettyName(props)
+    return PluginInfo.Name
+end
+
+function GetProperties()
+    props = {}
+    return props
+end
+
+function GetPins()
+    local pins = {}
+    table.insert(pins, {
+        Name = "Serial",
+        Direction = "input",
+        Domain = "serial"
+    })
+    return pins
+end
+
+PageNames = { "Config" }
+function GetPages(props)
+    local pages = {}
+    for i,name in ipairs(PageNames) do
+        table.insert(pages, {name = PageNames[i]})
+    end
+  
+    return pages
+end
+
+function RectifyProperties(props)
+    return props
+end
+
+function GetControls(props)
+    local ctrl = {}
+
+    table.insert(ctrl, {
+        Name = "ConnectionStatus",
+        ControlType = "Indicator",
+        IndicatorType = "Status",
+        UserPin = true,
+        PinStyle = "Output",
+    })
+
+    table.insert(ctrl, {
+        Name = "Hdmi1",
+        ControlType = "Button",
+        ButtonType = "Trigger",
+        UserPin = true,
+        PinStyle = "Input",
+    })
+
+    table.insert(ctrl, {
+        Name = "Initialize",
+        ControlType = "Button",
+        ButtonType = "Trigger",
+        UserPin = true,
+        PinStyle = "Input",
+        Icon = ""
+    })
+
+    table.insert(ctrl, {
+        Name = "PollTime",
+        ControlType = "Text",
+        Default = "60",
+        Description = "time between polls",
+        UserPin = true,
+        PinStyle = "Input"
+    })
+
+    table.insert(ctrl, {
+        Name = "PowerOff",
+        ControlType = "Button",
+        ButtonType = "Trigger",
+        UserPin = true,
+        PinStyle = "Input",
+    })
+
+    table.insert(ctrl, {
+        Name = "PowerOn",
+        ControlType = "Button",
+        ButtonType = "Trigger",
+        UserPin = true,
+        PinStyle = "Input",
+    })
+
+    table.insert(ctrl, {
+        Name = "PowerStatus",
+        ControlType = "Indicator",
+        IndicatorType = "LED",
+        UserPin = true,
+        PinStyle = "Output",
+    })
+
+    table.insert(ctrl, {
+        Name = "PowerToggle",
+        ControlType = "Button",
+        ButtonType = "Toggle",
+        UserPin = true,
+        PinStyle = "Both",
+        Icon = "Power"
+    })
+
+    table.insert(ctrl, {
+        Name = "Response",
+        ControlType = "Text",
+        Default = "",
+        Description = "response from Projector",
+        UserPin = true,
+        PinStyle = "Output"
+    })
+
+    return ctrl
+end
+
+function GetControlLayout(props)
+    layout = {}
+    graphics = {}
+    local CurrentPage = PageNames[props["page_index"].Value]
+
+    if CurrentPage == "Config" then
+        -- *** Background ***
+        table.insert(graphics, {
+            Type = "GroupBox",
+            Position = {0,30},
+            Size = {300,225},
+            Fill = {205,205,205},
+            CornerRadius = 0,
+            StrokeColor = {0,0,0},
+            StrokeWidth = 0
+        })
+
+        -- *** Header ***
+        table.insert(graphics, {
+            Type = "Label",
+            Position = {0,0},
+            Size = {300,30},
+            Color = {255,255,255},
+            Text = "Panasonic Projector Control",
+            FontSize = 14,
+            FontStyle = "Bold",
+            HTextAlign = "Center",
+            Fill = {0,0,0},
+            CornerRadius = 0
+        })
+
+        -- *** Connection Status ***
+        layout["ConnectionStatus"] = {
+            Style = "Indicator",
+            Position = {160,60},
+            Size = {80,20},
+        }
+
+        -- *** HDMI Source ***
+          -- I want Hdmi1 in Controls object, but not the UI:
+        layout["Hdmi1"] = {
+            Style = "Button",
+            ButtonStyle = "Trigger",
+            Position = {300,225},
+            Size = {0,0},
+            Color = {205,205,205},
+            OffColor = {205,205,205},
+        }
+
+        -- *** Init ***
+        layout["Initialize"] = {
+            Style = "Button",
+            ButtonStyle = "Trigger",
+            Position = {105,105},
+            Size = {90,45},
+            Color = {0,255,0},
+            OffColor = {0,159,60},
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Medium",
+            HTextAlign = "Center",
+            VTextAlign = "Center",
+            Legend = "Initialize",
+            Margin = 2,
+            CornerRadius = 2,
+            ButtonVisualStyle = "Gloss"
+        }
+
+        -- *** Poll Time ***
+        table.insert(graphics, {
+            Type = "GroupBox",
+            Position = {20,160},
+            Size = {270,20},
+            StrokeColor = {0,0,0},
+            StrokeWidth = 1,
+            Fill = {255,255,255,0},
+            CornerRadius = 8
+        })
+
+        table.insert(graphics, {
+            Type = "Label",
+            Position = {20,160},
+            Size = {90,20},
+            Color = {0,0,0},
+            Text = "Poll (seconds):",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Medium",
+            HTextAlign = "Right",
+            VTextAlign = "Center"
+        })
+
+        layout["PollTime"] = {
+            Style = "Text",
+            Position = {125,160},
+            Size = {165,20},
+            Color = {255,255,255, 0},
+            Fill = {50,50,50},
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Medium",
+            HTextAlign = "Center",
+            VTextAlign = "Center",
+            CornerRadius = 8,
+            StrokeWidth = 1
+        }
+
+        -- *** Power ***
+        table.insert(graphics, {
+            Type = "Label",
+            Position = {20,60},
+            Size = {60,20},
+            Color = {0,0,0},
+            Text = "Power:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Medium",
+            HTextAlign = "Center",
+            VTextAlign = "Center"
+        })
+
+          -- PowerOn/PowerOff in Controls object, but not the UI:
+        layout["PowerOff"] = {
+            Style = "Button",
+            ButtonStyle = "Trigger",
+            Position = {300,225},
+            Size = {0,0},
+            Color = {205,205,205},
+            OffColor = {205,205,205},
+        }
+
+        layout["PowerOn"] = {
+            Style = "Button",
+            ButtonStyle = "Trigger",
+            Position = {300,225},
+            Size = {0,0},
+            Color = {205,205,205},
+            OffColor = {205,205,205},
+        }
+
+        layout["PowerStatus"] = {
+            Style = "Indicator",
+            Position = {85, 60},
+            Size = {20, 20},
+            Color = {0,255,60},
+            UnlinkOffColor = true,
+            OffColor = {124,0,0}
+        }
+
+        layout["PowerToggle"] = {
+            Style="Button",
+            ButtonStyle = "Toggle",
+            Position= {110,60},
+            Size= {40,40},
+            Color = {0,159,60},
+            UnlinkOffColor = true,
+            OffColor = {169,0,23},
+            Margin = 2,
+            CornerRadius = 2,
+            IconColor = {255,255,255},
+            ButtonVisualStyle = "Gloss"
+        }
+
+        -- *** Response ***
+        table.insert(graphics, {
+            Type = "GroupBox",
+            Position = {20,190},
+            Size = {270,20},
+            StrokeColor = {0,0,0},
+            StrokeWidth = 1,
+            Fill = {255,255,255,0},
+            CornerRadius = 8
+        })
+
+        table.insert(graphics, {
+            Type = "Label",
+            Position = {20,190},
+            Size = {90,20},
+            Color = {0,0,0},
+            Text = "Response:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Medium",
+            HTextAlign = "Right",
+            VTextAlign = "Center"
+        })
+
+        layout["Response"] = {
+            Style = "Text",
+            Position = {125,190},
+            Size = {165,20},
+            Color = {255,255,255, 0},
+            Fill = {50,50,50},
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Medium",
+            HTextAlign = "Center",
+            VTextAlign = "Center",
+            CornerRadius = 8,
+            StrokeWidth = 1
+        }
+    end
+    return layout, graphics
+end
+
+-- *** End Reserved Functions ***
+
+-- *** Runtime Logic ***
+if Controls then
+
+  -- *** Set Aliases and Globals ***
+    Commands = {
+        AspectRatio = "\x02VSF:1\x03",
+        BackgroundBlack = "\x02OBC:1\x03",
+        EcoLightPower = "\x02VXX:LPWI1=+00000\x03",
+        EcoPowerSave = "\x02VXX:ECOI0=+00000\x03",
+        Enter = "\x02OEN\x03",
+        Hdmi1 = "\x02IIS:HD1\x03",
+        InputGuideOff = "\x02OID:0\x03",
+        InputQuery = "\x02QIN\x03",
+        PowerManagement = "\x02VXX:ECOI5=+00000\x03",
+        PowerOff = "\x02POF\x03",
+        PowerOn = "\x02PON\x03",
+        PowerQuery = "\x02QPW\x03",
+        SignalSearchOff = "\x02OSR:0\x03",
+        VolumeOff = "\x02AVL:000\x03",
+    }
+
+    HdmiStatus = false  -- true if Hdmi1 is selected
+
+    Initializing = false    -- true if initialization in process
+
+    PollTimer = Timer.New()
+
+    SerialPort = SerialPorts[1]
+
+    Settings = {
+        BaudRate = "9600",
+        DataBits = "8",
+        Parity = "N"
+    }
+
+    StatusStates = {
+        OK = 0,
+        COMPROMISED = 1,
+        FAULT = 2,
+        NOTPRESENT = 3,
+        MISSING = 4,
+        INITIALIZING = 5
+    }
+
+  -- *** End Globals ***
+
+  -- *** Functions ***
+    function ConnectionError(sp, msg)
+        local m = msg or "Timeout"
+        ReportStatus("MISSING", "Error: " .. m)
+        PollTimer:Stop()
+    end
+
+    function OpenSerialPort()
+        if SerialPort.IsOpen then
+            PollTimer:Stop()
+            SerialPort:Close()
+        end
+        SerialPort:Open(Settings.BaudRate, Settings.DataBits, Settings.Parity)
+    end
+
+    function ParseResponse()
+        local rx = SerialPort:Read(SerialPort.BufferLength)
+        Controls.Response.String = rx
+
+        if string.find(rx, "001") then
+            Controls.PowerStatus.Value = 1
+        elseif string.find(rx, "000") then
+             Controls.PowerStatus.Value = 0
+        elseif string.find(rx, "HD1") then
+            HdmiStatus = true
+        end
+
+        if HdmiStatus == false then
+            -- if input isn't Hdmi1, make input Hdmi1
+            SendCommand(Commands.Hdmi1)
+        end
+    end
+
+    function ReportStatus(state, msg)
+        local m = msg or ""
+        Controls.ConnectionStatus.Value = StatusStates[state]
+        Controls.ConnectionStatus.String = m
+    end
+
+    function SendCommand(cmd)
+        if SerialPort.IsOpen then
+            SerialPort:Write(cmd)
+        else
+            print("SendCommand: Serial Port closed")
+        end
+    end
+  -- *** End Functions ***
+
+  -- *** Event Handlers ***
+    Controls.Hdmi1.EventHandler = SendCommand(Commands.Hdmi1)
+
+    Controls.Initialize.EventHandler = function()
+        Initializing = true
+        Controls.Initialize.Legend = "Initializing"
+        SendCommand(Commands.PowerOn)
+        Timer.CallAfter(function()
+            SendCommand(Commands.Enter)
+            Timer.CallAfter(function()
+                SendCommand(Commands.Enter)
+                Timer.CallAfter(function()
+                    SendCommand(Commands.AspectRatio)
+                    Timer.CallAfter(function()
+                        SendCommand(Commands.BackgroundBlack)
+                        Timer.CallAfter(function()
+                            SendCommand(Commands.PowerManagement)
+                            Timer.CallAfter(function()
+                                SendCommand(Commands.EcoLightPower)
+                                Timer.CallAfter(function()
+                                    SendCommand(Commands.EcoPowerSave)
+                                    Timer.CallAfter(function()
+                                        SendCommand(Commands.SignalSearchOff)
+                                        Timer.CallAfter(function()
+                                            SendCommand(Commands.VolumeOff)
+                                            Timer.CallAfter(function()
+                                                SendCommand(Commands.InputGuideOff)
+                                                Initializing = false
+                                                Controls.Initialize.Legend = "Initialize"
+                                                print("Initialize Complete")
+                                            end, 1)
+                                        end, 1)
+                                    end, 2)
+                                end, 2)
+                            end, 2)
+                        end, 2)
+                    end, 2)
+                end, 5)
+            end, 12)
+        end, 1)
+    end
+
+    Controls.PollTime.EventHandler = function()
+        PollTime = tonumber(Controls.PollTime.String)
+        OpenSerialPort(PollTime)
+    end
+
+    PollTimer.EventHandler = function()
+        local func = function()
+            SendCommand(Commands.InputQuery)
+        end
+        Output = Commands.PowerQuery
+        Timer.CallAfter(func, 2)
+    end
+
+    Controls.PowerOff.EventHandler = function()
+        local func = function()
+            SendCommand(Commands.PowerOff)
+        end
+        SendCommand(Commands.PowerOff)
+        Controls.PowerToggle.Boolean = false
+        Controls.PowerStatus.Boolean = false
+        Timer.CallAfter(func, 3)
+        Timer.CallAfter(func, 3)
+    end
+    Controls.PowerOn.EventHandler = function()
+        local func = function()
+            SendCommand(Commands.PowerOn)
+        end
+        SendCommand(Commands.PowerOn)
+        Controls.PowerToggle.Boolean = true
+        Controls.PowerStatus.Boolean = true
+        Timer.CallAfter(func, 3)
+        Timer.CallAfter(func, 3)
+    end
+    Controls.PowerToggle.EventHandler = function()
+        if Controls.PowerToggle.Boolean == true then
+            if Controls.PowerStatus.Boolean == false then
+                local func = function()
+                    SendCommand(Commands.PowerOn)
+                end
+                SendCommand(Commands.PowerOn)
+                Controls.PowerToggle.Boolean = true
+                Controls.PowerStatus.Boolean = true
+                Timer.CallAfter(func, 3)
+                Timer.CallAfter(func, 3)
+            end
+        else
+            if Controls.PowerStatus.Boolean == true then
+                local func = function()
+                    SendCommand(Commands.PowerOff)
+                end
+                SendCommand(Commands.PowerOff)
+                Controls.PowerToggle.Boolean = false
+                Controls.PowerStatus.Boolean = false
+                Timer.CallAfter(func, 3)
+                Timer.CallAfter(func, 3)
+            end
+        end
+    end
+
+    SerialPort.Closed = ConnectionError
+    SerialPort.Connected = function()
+        ReportStatus("OK")
+        PollTimer:Start(PollTime)
+    end
+    SerialPort.Data = ParseResponse
+    SerialPort.Error = ConnectionError
+    SerialPort.Reconnect = function()
+        -- figure out what we need, here
+    end
+    SerialPort.Timeout = ConnectionError
+
+  -- *** End Event Handlers ***
+
+  -- *** Startup ***
+    Controls.Response.String = ""
+    PollTime = tonumber(Controls.PollTime.String)
+
+    OpenSerialPort()
+  -- *** End Startup ***
+end
