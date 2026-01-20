@@ -1,4 +1,4 @@
--- SonySRG-A40Control
+-- Panasonic Projector RS-232
 -- Created By: Alan Smith, Audio Visual Solutions, The University of Alabama
 -- Last Date Updated: 2026-01-20
 -- License: MIT
@@ -9,14 +9,13 @@
 -- -------------------------
 
 -- Latest QSYS Designer tested: 10.1.0
--- Latest Panasonic firmare tested: 
 
 PluginInfo = {
     Name = "Panasonic Projector",
     Version = "1.0",
     Id = "avs_panasonic_projector",
     Description = "Control a Panasonic Projector via RS-232 serial",
-    ShowDebug = true,
+    ShowDebug = false,
     BuildVersion = "1"
 };
 
@@ -564,4 +563,5 @@ if Controls then
 
     OpenSerialPort()
   -- *** End Startup ***
+
 end
